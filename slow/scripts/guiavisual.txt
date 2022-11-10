@@ -1,0 +1,46 @@
+document.getElementById("respuesta").innerHTML = ''
+
+let respuesta = await fetch(URL);
+
+const reader = respuesta.body.getReader();
+
+document.getElementById('respuesta').innerHTML = '0%'
+
+// Paso 2: obtener el total de la respuesta
+let contentLength = +respuesta.headers.get('content-length');
+
+
+
+// Paso 3: leer la data
+let receivedLength = 0; // bytes recibidos en este momento
+let chunks = []; // arreglo de fragmentos binarios recibidos (conforman el cuerpo) 
+while(true) {
+   const {done, value} = await reader.read();
+
+   if (done) {
+     break;
+   }
+
+   chunks.push(value);
+   receivedLength += value.length;
+
+   let percentage = ((receivedLength / contentLength) * 10).toFixed(2);
+
+   document.getElementById('respuesta').innerHTML = `${percentage}%`
+
+}
+
+// Paso 4: concatenar los framgento en un único Uint8Array
+let chunksAll = new Uint8Array(receivedLength); // (4.1)
+let position = 0;
+for(let chunk of chunks) {
+   chunksAll.set(chunk, position); // (4.2)
+   position += chunk.length;
+}
+
+// Paso 5: decodificar en una cadena
+let result = new TextDecoder("utf-8").decode(chunksAll);
+
+// Listo!
+let obj = JSON.parse(result);
+document.getElementById("respuesta").innerHTML = obj.length + ' registros (100%)';
